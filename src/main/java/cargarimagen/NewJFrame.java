@@ -32,7 +32,7 @@ public class NewJFrame extends javax.swing.JFrame {
         BufferedImage bmp = null;
         try {
             bmp
-                    = ImageIO.read(new File("D:\\Documentos\\Videojuegos\\Netbeans\\VisionComputacional\\src\\main\\resources\\1.jpg"));
+                    = ImageIO.read(new File("C:\\Users\\Public\\Documents\\VisionComputacional\\src\\main\\resources\\1.jpg"));
         } catch (Exception e) {
         }
         if (bmp != null) {
@@ -47,11 +47,16 @@ public class NewJFrame extends javax.swing.JFrame {
         grupoOpcion.add(espejo);
         grupoOpcion.add(moda);
         grupoOpcion.add(cambioDeRadiante);
-
+        grupoOpcion.add(pimienta);
+        grupoOpcion.add(umbral3);
+        grupoOpcion.add(umbralFrecuencia);
+        grupoOpcion.add(umbralVarianza);
+        
         //abrirImagen();
         jLabel2.setIcon(new ImageIcon(escalaGrises()));
         imagen2 = imagenActual;
         jLabel1.setIcon(new ImageIcon(imagen2));
+        
     }
 
     /*------------------------------*/
@@ -242,6 +247,110 @@ public class NewJFrame extends javax.swing.JFrame {
         }
         return aux;
     }
+    
+    public BufferedImage umbralFrec(BufferedImage aux) {
+        //Variables que almacenarán los píxeles
+        int mediaPixel, colorSRGB,rango,promedio=0;
+        Color colorAux;
+        ArrayList<Integer> mediaPixelAux = new ArrayList<Integer>();
+        for (int i = 0; i < aux.getWidth(); i++) {
+            for (int j = 0; j < aux.getHeight(); j++) {
+                colorAux = new Color(this.imagen2.getRGB(i, j));
+                mediaPixelAux.add((int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3));
+                if(umbralVarianza.isSelected()){
+                    promedio = promedio + (int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
+                }
+            }
+
+        }
+        
+        
+       
+            
+        if(umbralVarianza.isSelected()){
+            promedio = promedio / (mediaPixelAux.size());
+            double sum =0;
+            for (int i = 0; i < mediaPixelAux.size() - 1; i++) {
+             sum = sum +  (Math.pow(mediaPixelAux.get(i) - promedio, 2)/ mediaPixelAux.size())  ;            
+            }
+            
+            //sum = Math.sqrt(sum);
+            rango = (int)sum;
+            
+        }else{
+         
+            int cont = 1, cantMax = 0, moda = -1, valAnt = -1;
+            for (int i = 0; i < mediaPixelAux.size() - 1; i++) {
+                if (valAnt == mediaPixelAux.get(i)) {
+                    cont++;
+                } else {
+                    if (cont >= cantMax) {
+                        moda = mediaPixelAux.get(i);
+                        cantMax = cont;
+                        valAnt = moda;
+                    }
+                    cont = 1;
+                }
+            }
+
+            rango = moda;
+        
+        }
+
+        //Recorremos la imagen píxel a píxel
+        for (int i = 0; i < aux.getWidth(); i++) {
+            for (int j = 0; j < aux.getHeight(); j++) {
+                //Almacenamos el color del píxel
+                colorAux = new Color(this.imagen2.getRGB(i, j));
+                //Calculamos la media de los tres canales (rojo, verde, azul)
+                mediaPixel = (int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
+                if (mediaPixel < rango) {
+                    mediaPixel = 0;
+                } else {
+                    mediaPixel = 255;
+                }
+
+                //Cambiamos a formato sRGB
+                colorSRGB = (mediaPixel << 16) | (mediaPixel << 8) | mediaPixel;
+
+                aux.setRGB(i, j, colorSRGB);
+
+            }
+
+        }
+        return aux;
+    }
+    
+    public BufferedImage umbralCapas(BufferedImage aux) {
+        //Variables que almacenarán los píxeles
+        int mediaPixel, colorSRGB;
+        Color colorAux;
+        
+        //Recorremos la imagen píxel a píxel
+        for (int i = 0; i < aux.getWidth(); i++) {
+            for (int j = 0; j < aux.getHeight(); j++) {
+                //Almacenamos el color del píxel
+                colorAux = new Color(this.imagen2.getRGB(i, j));
+                //Calculamos la media de los tres canales (rojo, verde, azul)
+                mediaPixel = (int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
+       
+                if (umbral3.isSelected()) {
+                    int numtons = Integer.parseInt(umbralTono.getItemAt(umbralTono.getSelectedIndex()));
+                    int rango = 256/numtons;
+                    int ton = mediaPixel/rango;
+                    mediaPixel = ton * (255/(numtons-1));
+                }
+                //Cambiamos a formato sRGB
+                colorSRGB = (mediaPixel << 16) | (mediaPixel << 8) | mediaPixel;
+
+                aux.setRGB(i, j, colorSRGB);
+
+            }
+
+        }
+        return aux;
+    }
+
 
     public BufferedImage filtroMedianaTrunca(BufferedImage aux) {
         //Variables que almacenarán los píxeles
@@ -264,12 +373,25 @@ public class NewJFrame extends javax.swing.JFrame {
     private int tomarDatos(int x, int y) {
 
         Color colorAux;
-        int mediaPixel = 0;
-
+        colorAux = new Color(this.imagen2.getRGB(x, y));                   
+        int pixelAct =((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
+        int mediaPixel = pixelAct;
+        
+        boolean doMedianaTrunca = medianaTrunca.isSelected();
+        
+//        if((pimienta.isSelected()))
+//            if((pixelAct==0 || pixelAct==255)){
+//                doMedianaTrunca = true;
+//            } else {
+//                return pixelAct;
+//            }
+        
         ArrayList<Integer> mediaPixelAux = new ArrayList<Integer>();
-
-        for (int i = x - 1; i <= x + 1; i++) {
-            for (int j = y - 1; j <= y + 1; j++) {
+        
+        
+        
+        for (int i = x - 3; i <= x + 3; i++) {//cambio a 5 
+            for (int j = y - 3; j <= y + 3; j++) { // cambio a 5
                 //Almacenamos el color del píxel
                 if (esValidaPosicion(i, j)) {
                     colorAux = new Color(this.imagen2.getRGB(i, j));
@@ -280,13 +402,13 @@ public class NewJFrame extends javax.swing.JFrame {
 
         Collections.sort(mediaPixelAux);
 
-        if (medianaTrunca.isSelected()) {
+        if (doMedianaTrunca) {
             if ((mediaPixelAux.size() % 2) == 0) {
                 mediaPixel = (mediaPixelAux.get(mediaPixelAux.size() / 2) + mediaPixelAux.get(mediaPixelAux.size() / 2 - 1)) / 2;
             } else {
                 mediaPixel = mediaPixelAux.get(mediaPixelAux.size() / 2);
             }
-        } else if (moda.isSelected()) {
+        } else if (moda.isSelected() || pimienta.isSelected()) {
             int cont = 1, cantMax = 0, moda = -1, valAnt = -1;
             for (int i = 0; i < mediaPixelAux.size() - 1; i++) {
                 if (valAnt == mediaPixelAux.get(i)) {
@@ -304,7 +426,7 @@ public class NewJFrame extends javax.swing.JFrame {
                 colorAux = new Color(this.imagen2.getRGB(x, y));
                 moda = ((int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3));
             }
-
+            
             mediaPixel = moda;
         }
 
@@ -406,6 +528,11 @@ public class NewJFrame extends javax.swing.JFrame {
         medianaTrunca = new javax.swing.JRadioButton();
         moda = new javax.swing.JRadioButton();
         cambioDeRadiante = new javax.swing.JRadioButton();
+        pimienta = new javax.swing.JRadioButton();
+        umbral3 = new javax.swing.JRadioButton();
+        umbralTono = new javax.swing.JComboBox<>();
+        umbralFrecuencia = new javax.swing.JRadioButton();
+        umbralVarianza = new javax.swing.JRadioButton();
         pnlOperadores = new javax.swing.JPanel();
         inversionVertical = new javax.swing.JRadioButton();
         inversionHorizontal = new javax.swing.JRadioButton();
@@ -445,12 +572,27 @@ public class NewJFrame extends javax.swing.JFrame {
             }
         });
 
-        cambioDeRadiante.setText("Cambio de Radiante");
+        cambioDeRadiante.setText("(Pendiente)");
         cambioDeRadiante.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 cambioDeRadianteActionPerformed(evt);
             }
         });
+
+        pimienta.setText("(Pendiente)");
+        pimienta.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                pimientaActionPerformed(evt);
+            }
+        });
+
+        umbral3.setText("Umbral Tonos");
+
+        umbralTono.setModel(new javax.swing.DefaultComboBoxModel<>(new String[] { "3", "4", "8", "16" }));
+
+        umbralFrecuencia.setText("Umbral MaximaFrecuencia");
+
+        umbralVarianza.setText("Umbral Varianza");
 
         javax.swing.GroupLayout filtrosLayout = new javax.swing.GroupLayout(filtros);
         filtros.setLayout(filtrosLayout);
@@ -461,8 +603,15 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addGroup(filtrosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(medianaTrunca)
                     .addComponent(moda)
-                    .addComponent(cambioDeRadiante))
-                .addContainerGap(47, Short.MAX_VALUE))
+                    .addComponent(cambioDeRadiante)
+                    .addComponent(pimienta)
+                    .addGroup(filtrosLayout.createSequentialGroup()
+                        .addComponent(umbral3)
+                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                        .addComponent(umbralTono, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addComponent(umbralFrecuencia)
+                    .addComponent(umbralVarianza))
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         filtrosLayout.setVerticalGroup(
             filtrosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
@@ -472,7 +621,17 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addComponent(moda)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(cambioDeRadiante)
-                .addGap(0, 0, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(pimienta)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addGroup(filtrosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.BASELINE)
+                    .addComponent(umbral3)
+                    .addComponent(umbralTono, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(umbralFrecuencia)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(umbralVarianza)
+                .addContainerGap(16, Short.MAX_VALUE))
         );
 
         pnlOperadores.setBorder(javax.swing.BorderFactory.createTitledBorder("Operadores\n"));
@@ -514,11 +673,11 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addComponent(inversionVertical)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(inversionHorizontal)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, 3, Short.MAX_VALUE)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(espejo)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(negativo)
-                .addContainerGap())
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         sliderBrillo.setMaximum(255);
@@ -550,29 +709,29 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addComponent(filtros, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addGroup(pnlOpcionesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(sliderBrillo, javax.swing.GroupLayout.DEFAULT_SIZE, 822, Short.MAX_VALUE)
+                    .addComponent(sliderUmbralBinario, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(pnlOpcionesLayout.createSequentialGroup()
                         .addComponent(ejecutar, javax.swing.GroupLayout.PREFERRED_SIZE, 165, javax.swing.GroupLayout.PREFERRED_SIZE)
-                        .addGap(0, 657, Short.MAX_VALUE))
-                    .addComponent(sliderBrillo, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                    .addComponent(sliderUmbralBinario, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
         );
         pnlOpcionesLayout.setVerticalGroup(
             pnlOpcionesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(pnlOpcionesLayout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addContainerGap()
                 .addGroup(pnlOpcionesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+                    .addComponent(pnlOperadores, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnlOpcionesLayout.createSequentialGroup()
                         .addComponent(sliderBrillo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(6, 6, 6)
                         .addComponent(sliderUmbralBinario, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(ejecutar, javax.swing.GroupLayout.PREFERRED_SIZE, 52, javax.swing.GroupLayout.PREFERRED_SIZE))
-                    .addComponent(pnlOperadores, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
+                    .addGroup(pnlOpcionesLayout.createSequentialGroup()
+                        .addComponent(filtros, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                        .addGap(0, 0, Short.MAX_VALUE)))
                 .addContainerGap())
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnlOpcionesLayout.createSequentialGroup()
-                .addContainerGap()
-                .addComponent(filtros, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
 
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
@@ -580,23 +739,22 @@ public class NewJFrame extends javax.swing.JFrame {
         jPanel1Layout.setHorizontalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addGap(24, 24, 24)
-                        .addComponent(jLabel2)
-                        .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
-                        .addComponent(jLabel1))
-                    .addGroup(jPanel1Layout.createSequentialGroup()
-                        .addContainerGap()
-                        .addComponent(pnlOpciones, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)))
+                .addGap(24, 24, 24)
+                .addComponent(jLabel2)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(jLabel1)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
+            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addComponent(pnlOpciones, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
+                .addContainerGap())
         );
         jPanel1Layout.setVerticalGroup(
             jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
-                .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                .addGap(33, 33, 33)
                 .addComponent(pnlOpciones, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
-                .addGap(79, 79, 79)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
                     .addComponent(jLabel1)
                     .addComponent(jLabel2))
@@ -663,9 +821,18 @@ public class NewJFrame extends javax.swing.JFrame {
         } else if (cambioDeRadiante.isSelected()) {
             BufferedImage aux = deepCopy(imagenActual);
             jLabel1.setIcon(new ImageIcon(funCambioRadiante(imagen2)));
+        }else if (pimienta.isSelected()) {
+            BufferedImage aux = deepCopy(imagenActual);
+            jLabel1.setIcon(new ImageIcon(filtroMedianaTrunca(imagen2)));
+        }else if (umbral3.isSelected()) {
+            BufferedImage aux = deepCopy(imagenActual);
+            jLabel1.setIcon(new ImageIcon(umbralCapas(imagen2)));
+        }else if (umbralFrecuencia.isSelected() || umbralVarianza.isSelected()) {
+            BufferedImage aux = deepCopy(imagenActual);
+            jLabel1.setIcon(new ImageIcon(umbralFrec(imagen2)));
         }
     }//GEN-LAST:event_ejecutarActionPerformed
-
+    
     private void espejoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_espejoActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_espejoActionPerformed
@@ -683,6 +850,10 @@ public class NewJFrame extends javax.swing.JFrame {
     private void cambioDeRadianteActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_cambioDeRadianteActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_cambioDeRadianteActionPerformed
+
+    private void pimientaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pimientaActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_pimientaActionPerformed
 
     static BufferedImage deepCopy(BufferedImage bi) {
         ColorModel cm = bi.getColorModel();
@@ -741,9 +912,14 @@ public class NewJFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButton medianaTrunca;
     private javax.swing.JRadioButton moda;
     private javax.swing.JRadioButton negativo;
+    private javax.swing.JRadioButton pimienta;
     private javax.swing.JPanel pnlOpciones;
     private javax.swing.JPanel pnlOperadores;
     private javax.swing.JSlider sliderBrillo;
     private javax.swing.JSlider sliderUmbralBinario;
+    private javax.swing.JRadioButton umbral3;
+    private javax.swing.JRadioButton umbralFrecuencia;
+    private javax.swing.JComboBox<String> umbralTono;
+    private javax.swing.JRadioButton umbralVarianza;
     // End of variables declaration//GEN-END:variables
 }
