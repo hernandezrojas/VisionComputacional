@@ -5,7 +5,11 @@
  */
 package cargarimagen;
 
+import java.awt.BasicStroke;
 import java.awt.Color;
+import java.awt.Dimension;
+import java.awt.Graphics;
+import java.awt.Graphics2D;
 import java.awt.image.BufferedImage;
 import java.awt.image.ColorModel;
 import java.awt.image.WritableRaster;
@@ -17,6 +21,14 @@ import javax.imageio.ImageIO;
 import javax.swing.ImageIcon;
 import javax.swing.JFileChooser;
 import javax.swing.filechooser.FileNameExtensionFilter;
+import java.awt.Point;
+import java.awt.Rectangle;
+import java.awt.RenderingHints;
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
+import java.awt.geom.Rectangle2D;
+import javax.swing.JLabel;
+import javax.swing.JPanel;
 
 /**
  *
@@ -28,15 +40,23 @@ public class NewJFrame extends javax.swing.JFrame {
      * Creates new form NewJFrame
      */
     public NewJFrame() {
+
+        jLabel2 = new JLabel();
+
         initComponents();
         BufferedImage bmp = null;
+        BufferedImage bmp2 = null;
         try {
             bmp
-                    = ImageIO.read(new File("C:\\Users\\Public\\Documents\\VisionComputacional\\src\\main\\resources\\1.jpg"));
+                    = ImageIO.read(new File("C:\\Users\\Public\\Documents\\VisionComputacional\\src\\main\\resources\\10.png"));
+            bmp2
+                    = ImageIO.read(new File("C:\\Users\\Public\\Documents\\VisionComputacional\\src\\main\\resources\\10.png"));
         } catch (Exception e) {
         }
         if (bmp != null) {
-            imagenActual = bmp;
+            imagenActual = bmp;  
+            imagenBackground = escalaGrises(bmp2);
+            
         }
 
         inversionVertical.setSelected(true);
@@ -51,17 +71,23 @@ public class NewJFrame extends javax.swing.JFrame {
         grupoOpcion.add(umbral3);
         grupoOpcion.add(umbralFrecuencia);
         grupoOpcion.add(umbralVarianza);
-        
+
         //abrirImagen();
-        jLabel2.setIcon(new ImageIcon(escalaGrises()));
+        jLabel2.setIcon(new ImageIcon(escalaGrises(imagenActual)));
         imagen2 = imagenActual;
         jLabel1.setIcon(new ImageIcon(imagen2));
         
+
     }
 
     /*------------------------------*/
+    private BufferedImage imagenBackground;
     private BufferedImage imagenActual;
     private BufferedImage imagen2;
+    private JLabel jLabel2;
+    private boolean brillo = false;
+    private Point p1 = new Point(100, 100);
+    private Point p2 = new Point(540, 380);
 
     //Método que devuelve una imagen abierta desde archivo
     //Retorna un objeto BufferedImagen
@@ -191,10 +217,18 @@ public class NewJFrame extends javax.swing.JFrame {
         //Variables que almacenarán los píxeles
         int mediaPixel, colorSRGB;
         Color colorAux;
-
+        Point p1for = new Point(0, 0);
+        Point p2for = new Point(aux.getWidth()-1, aux.getHeight()-1);
+        
+        if(brillo){
+            p1for = p1;
+            p2for = p2;
+            
+        }
+        
         //Recorremos la imagen píxel a píxel
-        for (int i = 0; i < aux.getWidth(); i++) {
-            for (int j = 0; j < aux.getHeight(); j++) {
+        for (int i = p1for.x; i < p2for.x; i++) {
+            for (int j = p1for.y; j < p2for.y; j++) {
                 //Almacenamos el color del píxel
                 colorAux = new Color(this.imagen2.getRGB(i, j));
                 //Calculamos la media de los tres canales (rojo, verde, azul)
@@ -247,38 +281,35 @@ public class NewJFrame extends javax.swing.JFrame {
         }
         return aux;
     }
-    
+
     public BufferedImage umbralFrec(BufferedImage aux) {
         //Variables que almacenarán los píxeles
-        int mediaPixel, colorSRGB,rango,promedio=0;
+        int mediaPixel, colorSRGB, rango, promedio = 0;
         Color colorAux;
         ArrayList<Integer> mediaPixelAux = new ArrayList<Integer>();
         for (int i = 0; i < aux.getWidth(); i++) {
             for (int j = 0; j < aux.getHeight(); j++) {
                 colorAux = new Color(this.imagen2.getRGB(i, j));
                 mediaPixelAux.add((int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3));
-                if(umbralVarianza.isSelected()){
+                if (umbralVarianza.isSelected()) {
                     promedio = promedio + (int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
                 }
             }
 
         }
-        
-        
-       
-            
-        if(umbralVarianza.isSelected()){
+
+        if (umbralVarianza.isSelected()) {
             promedio = promedio / (mediaPixelAux.size());
-            double sum =0;
+            double sum = 0;
             for (int i = 0; i < mediaPixelAux.size() - 1; i++) {
-             sum = sum +  (Math.pow(mediaPixelAux.get(i) - promedio, 2)/ mediaPixelAux.size())  ;            
+                sum = sum + (Math.pow(mediaPixelAux.get(i) - promedio, 2));
             }
-            
-            //sum = Math.sqrt(sum);
-            rango = (int)sum;
-            
-        }else{
-         
+
+            sum = Math.sqrt(sum / (mediaPixelAux.size() - 1));
+            rango = (int) sum;
+
+        } else {
+
             int cont = 1, cantMax = 0, moda = -1, valAnt = -1;
             for (int i = 0; i < mediaPixelAux.size() - 1; i++) {
                 if (valAnt == mediaPixelAux.get(i)) {
@@ -294,7 +325,7 @@ public class NewJFrame extends javax.swing.JFrame {
             }
 
             rango = moda;
-        
+
         }
 
         //Recorremos la imagen píxel a píxel
@@ -320,12 +351,12 @@ public class NewJFrame extends javax.swing.JFrame {
         }
         return aux;
     }
-    
+
     public BufferedImage umbralCapas(BufferedImage aux) {
         //Variables que almacenarán los píxeles
         int mediaPixel, colorSRGB;
         Color colorAux;
-        
+
         //Recorremos la imagen píxel a píxel
         for (int i = 0; i < aux.getWidth(); i++) {
             for (int j = 0; j < aux.getHeight(); j++) {
@@ -333,12 +364,12 @@ public class NewJFrame extends javax.swing.JFrame {
                 colorAux = new Color(this.imagen2.getRGB(i, j));
                 //Calculamos la media de los tres canales (rojo, verde, azul)
                 mediaPixel = (int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
-       
+
                 if (umbral3.isSelected()) {
                     int numtons = Integer.parseInt(umbralTono.getItemAt(umbralTono.getSelectedIndex()));
-                    int rango = 256/numtons;
-                    int ton = mediaPixel/rango;
-                    mediaPixel = ton * (255/(numtons-1));
+                    int rango = 256 / numtons;
+                    int ton = mediaPixel / rango;
+                    mediaPixel = ton * (255 / (numtons - 1));
                 }
                 //Cambiamos a formato sRGB
                 colorSRGB = (mediaPixel << 16) | (mediaPixel << 8) | mediaPixel;
@@ -350,7 +381,6 @@ public class NewJFrame extends javax.swing.JFrame {
         }
         return aux;
     }
-
 
     public BufferedImage filtroMedianaTrunca(BufferedImage aux) {
         //Variables que almacenarán los píxeles
@@ -373,25 +403,24 @@ public class NewJFrame extends javax.swing.JFrame {
     private int tomarDatos(int x, int y) {
 
         Color colorAux;
-        colorAux = new Color(this.imagen2.getRGB(x, y));                   
-        int pixelAct =((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
+        colorAux = new Color(this.imagen2.getRGB(x, y));
+        int pixelAct = ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
         int mediaPixel = pixelAct;
-        
+
         boolean doMedianaTrunca = medianaTrunca.isSelected();
-        
-//        if((pimienta.isSelected()))
-//            if((pixelAct==0 || pixelAct==255)){
-//                doMedianaTrunca = true;
-//            } else {
-//                return pixelAct;
-//            }
-        
+
+        if ((pimienta.isSelected())) {
+            if ((pixelAct < 10 || pixelAct > 245)) {
+                doMedianaTrunca = true;
+            } else {
+                return pixelAct;
+            }
+        }
+
         ArrayList<Integer> mediaPixelAux = new ArrayList<Integer>();
-        
-        
-        
-        for (int i = x - 3; i <= x + 3; i++) {//cambio a 5 
-            for (int j = y - 3; j <= y + 3; j++) { // cambio a 5
+
+        for (int i = x - 1; i <= x + 1; i++) {//cambio a 5 
+            for (int j = y - 1; j <= y + 1; j++) { // cambio a 5
                 //Almacenamos el color del píxel
                 if (esValidaPosicion(i, j)) {
                     colorAux = new Color(this.imagen2.getRGB(i, j));
@@ -402,13 +431,13 @@ public class NewJFrame extends javax.swing.JFrame {
 
         Collections.sort(mediaPixelAux);
 
-        if (doMedianaTrunca) {
+        if (doMedianaTrunca || pimienta.isSelected()) {
             if ((mediaPixelAux.size() % 2) == 0) {
                 mediaPixel = (mediaPixelAux.get(mediaPixelAux.size() / 2) + mediaPixelAux.get(mediaPixelAux.size() / 2 - 1)) / 2;
             } else {
                 mediaPixel = mediaPixelAux.get(mediaPixelAux.size() / 2);
             }
-        } else if (moda.isSelected() || pimienta.isSelected()) {
+        } else if (moda.isSelected()) {
             int cont = 1, cantMax = 0, moda = -1, valAnt = -1;
             for (int i = 0; i < mediaPixelAux.size() - 1; i++) {
                 if (valAnt == mediaPixelAux.get(i)) {
@@ -426,7 +455,7 @@ public class NewJFrame extends javax.swing.JFrame {
                 colorAux = new Color(this.imagen2.getRGB(x, y));
                 moda = ((int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3));
             }
-            
+
             mediaPixel = moda;
         }
 
@@ -437,7 +466,7 @@ public class NewJFrame extends javax.swing.JFrame {
         return !(i < 0 || i >= imagen2.getWidth() || j < 0 || j >= imagen2.getHeight());
     }
 
-    public BufferedImage escalaGrises() {
+    public BufferedImage escalaGrises(BufferedImage imagenActual) {
         //Variables que almacenarán los píxeles
         int mediaPixel, colorSRGB;
         Color colorAux;
@@ -446,7 +475,7 @@ public class NewJFrame extends javax.swing.JFrame {
         for (int i = 0; i < imagenActual.getWidth(); i++) {
             for (int j = 0; j < imagenActual.getHeight(); j++) {
                 //Almacenamos el color del píxel
-                colorAux = new Color(this.imagenActual.getRGB(i, j));
+                colorAux = new Color(imagenActual.getRGB(i, j));
                 //Calculamos la media de los tres canales (rojo, verde, azul)
                 mediaPixel = (int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
 
@@ -483,28 +512,27 @@ public class NewJFrame extends javax.swing.JFrame {
         Color colorAux;
         int grisI, grisD, G;
         int mediaPixel = 0;
-        
+
         ArrayList<Integer> mediaPixelAux = new ArrayList<Integer>();
 
         for (int i = x - 1; i <= x + 1; i++) {
             for (int j = y - 1; j <= y + 1; j++) {
                 //Almacenamos el color del píxel
-                if (esValidaPosicion(i-1, j) && esValidaPosicion(i+1, j) && esValidaPosicion(i, j+1) && esValidaPosicion(i, j-1)) {
+                if (esValidaPosicion(i - 1, j) && esValidaPosicion(i + 1, j) && esValidaPosicion(i, j + 1) && esValidaPosicion(i, j - 1)) {
                     colorAux = new Color(this.imagen2.getRGB(i, j));
                     grisI = (int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
                     colorAux = new Color(this.imagen2.getRGB(i, j));
                     grisD = (int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
-                    
-                    G = (int) Math.sqrt(Math.pow(grisI, 2)+Math.pow(grisD, 2));
+
+                    G = (int) Math.sqrt(Math.pow(grisI, 2) + Math.pow(grisD, 2));
                     //Double ang = (double) 
                 }
             }
-        }      
+        }
 
         return mediaPixel;
     }
-    
-    
+
     /**
      * *************************************************
      */
@@ -520,7 +548,6 @@ public class NewJFrame extends javax.swing.JFrame {
         grupoOpcion = new javax.swing.ButtonGroup();
         jSplitPane2 = new javax.swing.JSplitPane();
         jPanel1 = new javax.swing.JPanel();
-        jLabel2 = new javax.swing.JLabel();
         jLabel1 = new javax.swing.JLabel();
         pnlOpciones = new javax.swing.JPanel();
         ejecutar = new javax.swing.JButton();
@@ -540,12 +567,11 @@ public class NewJFrame extends javax.swing.JFrame {
         espejo = new javax.swing.JRadioButton();
         sliderBrillo = new javax.swing.JSlider();
         sliderUmbralBinario = new javax.swing.JSlider();
+        jPanel2 = new PanelRectangulo();
 
         setDefaultCloseOperation(javax.swing.WindowConstants.EXIT_ON_CLOSE);
 
         jSplitPane2.setOrientation(javax.swing.JSplitPane.VERTICAL_SPLIT);
-
-        jLabel2.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Etiquetas.jpg"))); // NOI18N
 
         jLabel1.setIcon(new javax.swing.ImageIcon(getClass().getResource("/Etiquetas.jpg"))); // NOI18N
 
@@ -579,7 +605,7 @@ public class NewJFrame extends javax.swing.JFrame {
             }
         });
 
-        pimienta.setText("(Pendiente)");
+        pimienta.setText("Sal y Pimienta");
         pimienta.addActionListener(new java.awt.event.ActionListener() {
             public void actionPerformed(java.awt.event.ActionEvent evt) {
                 pimientaActionPerformed(evt);
@@ -617,7 +643,7 @@ public class NewJFrame extends javax.swing.JFrame {
             filtrosLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(filtrosLayout.createSequentialGroup()
                 .addComponent(medianaTrunca)
-                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(moda)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(cambioDeRadiante)
@@ -734,17 +760,28 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addContainerGap())
         );
 
+        javax.swing.GroupLayout jPanel2Layout = new javax.swing.GroupLayout(jPanel2);
+        jPanel2.setLayout(jPanel2Layout);
+        jPanel2Layout.setHorizontalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 512, Short.MAX_VALUE)
+        );
+        jPanel2Layout.setVerticalGroup(
+            jPanel2Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            .addGap(0, 0, Short.MAX_VALUE)
+        );
+
         javax.swing.GroupLayout jPanel1Layout = new javax.swing.GroupLayout(jPanel1);
         jPanel1.setLayout(jPanel1Layout);
         jPanel1Layout.setHorizontalGroup(
-            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
+            jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
             .addGroup(jPanel1Layout.createSequentialGroup()
-                .addGap(24, 24, 24)
-                .addComponent(jLabel2)
+                .addContainerGap()
+                .addComponent(jPanel2, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(jLabel1)
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
-            .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, jPanel1Layout.createSequentialGroup()
+            .addGroup(jPanel1Layout.createSequentialGroup()
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                 .addComponent(pnlOpciones, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addContainerGap())
@@ -755,9 +792,9 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addGap(33, 33, 33)
                 .addComponent(pnlOpciones, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
-                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.TRAILING)
-                    .addComponent(jLabel1)
-                    .addComponent(jLabel2))
+                .addGroup(jPanel1Layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING, false)
+                    .addComponent(jLabel1, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
+                    .addComponent(jPanel2, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
                 .addContainerGap())
         );
 
@@ -769,7 +806,7 @@ public class NewJFrame extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jSplitPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 1296, Short.MAX_VALUE)
+                .addComponent(jSplitPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 1296, Short.MAX_VALUE)
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -821,18 +858,18 @@ public class NewJFrame extends javax.swing.JFrame {
         } else if (cambioDeRadiante.isSelected()) {
             BufferedImage aux = deepCopy(imagenActual);
             jLabel1.setIcon(new ImageIcon(funCambioRadiante(imagen2)));
-        }else if (pimienta.isSelected()) {
+        } else if (pimienta.isSelected()) {
             BufferedImage aux = deepCopy(imagenActual);
             jLabel1.setIcon(new ImageIcon(filtroMedianaTrunca(imagen2)));
-        }else if (umbral3.isSelected()) {
+        } else if (umbral3.isSelected()) {
             BufferedImage aux = deepCopy(imagenActual);
             jLabel1.setIcon(new ImageIcon(umbralCapas(imagen2)));
-        }else if (umbralFrecuencia.isSelected() || umbralVarianza.isSelected()) {
+        } else if (umbralFrecuencia.isSelected() || umbralVarianza.isSelected()) {
             BufferedImage aux = deepCopy(imagenActual);
             jLabel1.setIcon(new ImageIcon(umbralFrec(imagen2)));
         }
     }//GEN-LAST:event_ejecutarActionPerformed
-    
+
     private void espejoActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_espejoActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_espejoActionPerformed
@@ -897,6 +934,67 @@ public class NewJFrame extends javax.swing.JFrame {
         });
     }
 
+    class PanelRectangulo extends JPanel {
+
+        private MouseHandler mouseHandler = new MouseHandler();
+        
+        private boolean drawing;
+
+        public PanelRectangulo() {
+            drawing = false;
+            //this.setPreferredSize(new Dimension(640, 480));
+            this.addMouseListener(mouseHandler);
+            this.addMouseMotionListener(mouseHandler);
+        }
+
+        @Override
+        protected void paintComponent(Graphics g) {
+            super.paintComponent(g);
+            g.drawImage(imagenBackground, 0, 0, imagenBackground.getWidth(), imagenBackground.getHeight(), null);
+            Graphics2D g2d = (Graphics2D) g;
+            g2d.setColor(Color.blue);
+            g2d.setRenderingHint(
+                    RenderingHints.KEY_ANTIALIASING,
+                    RenderingHints.VALUE_ANTIALIAS_ON);
+            //g2d.setStroke(new BasicStroke(8,
+            //        BasicStroke.CAP_ROUND, BasicStroke.JOIN_BEVEL));
+            if (drawing) {
+                g.drawRect(p1.x, p1.y, p2.x - p1.x, p2.y - p1.y);
+            }
+        }
+
+        private class MouseHandler extends MouseAdapter {
+
+            @Override
+            public void mousePressed(MouseEvent e) {
+                drawing = true;
+                p1 = e.getPoint();
+                p2 = p1;
+                repaint();
+            }
+
+            @Override
+            public void mouseReleased(MouseEvent e) {
+                drawing = false;
+                p2 = e.getPoint();
+                brillo = true;
+                eventoBrillo();
+                brillo = false;
+                repaint();
+            }
+
+            @Override
+            public void mouseDragged(MouseEvent e) {
+                if (drawing) {
+                    p2 = e.getPoint();
+                   
+                    repaint();
+                }
+
+            }
+        }
+
+    }
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JRadioButton cambioDeRadiante;
     private javax.swing.JButton ejecutar;
@@ -906,8 +1004,8 @@ public class NewJFrame extends javax.swing.JFrame {
     private javax.swing.JRadioButton inversionHorizontal;
     private javax.swing.JRadioButton inversionVertical;
     private javax.swing.JLabel jLabel1;
-    private javax.swing.JLabel jLabel2;
     private javax.swing.JPanel jPanel1;
+    private javax.swing.JPanel jPanel2;
     private javax.swing.JSplitPane jSplitPane2;
     private javax.swing.JRadioButton medianaTrunca;
     private javax.swing.JRadioButton moda;
