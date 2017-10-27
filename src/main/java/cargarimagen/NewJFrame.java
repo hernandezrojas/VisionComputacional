@@ -71,6 +71,7 @@ public class NewJFrame extends javax.swing.JFrame {
         grupoOpcion.add(umbral3);
         grupoOpcion.add(umbralFrecuencia);
         grupoOpcion.add(umbralVarianza);
+        grupoOpcion.add(entropia);
 
         //abrirImagen();
         jLabel2.setIcon(new ImageIcon(escalaGrises(imagenActual)));
@@ -532,6 +533,81 @@ public class NewJFrame extends javax.swing.JFrame {
 
         return mediaPixel;
     }
+    
+    private double[] hisImagen;
+    
+    public BufferedImage getEntropia(BufferedImage aux) {
+
+        hisImagen = new double[256];
+
+        for (int i = 0; i < 256; i++) {
+            hisImagen[i] = 0;
+        }
+
+        //Variables que almacenarán los píxeles
+        int mediaPixel, colorSRGB;
+        Color colorAux;
+
+        //Recorremos la imagen píxel a píxel
+        for (int i = 0; i < imagen2.getWidth(); i++) {
+            for (int j = 0; j < imagen2.getHeight(); j++) {
+                //Almacenamos el color del píxel
+                colorAux = new Color(this.imagen2.getRGB(i, j));
+                //Calculamos la media de los tres canales (rojo, verde, azul)
+                mediaPixel = (int) ((colorAux.getRed() + colorAux.getGreen() + colorAux.getBlue()) / 3);
+                hisImagen[mediaPixel]++;
+
+            }
+        }
+
+        for (int i = 0; i < 256; i++) {
+            hisImagen[i] = hisImagen[i] / (aux.getWidth() * aux.getHeight());
+        }
+
+        double Sum_prob_1k = 0, Sum_prob_kl = 0, Sum_prob_ln_1k = 0, Sum_prob_ln_kl = 0;
+        int start = 0, end = 255;
+
+        Double[] dElGrey = new Double[256];
+        ArrayList<Double> EiGrey;
+
+        for (int k = start; k < end; k++) {
+            Sum_prob_1k = 0;
+            Sum_prob_kl = 0;
+            Sum_prob_ln_1k = 0;
+            Sum_prob_ln_kl = 0;
+            //i=1 need to be start = 1
+            for (int i = 1; i < k; i++) {
+                Sum_prob_1k += hisImagen[i];
+                if (hisImagen[i] != 0) {
+                    Sum_prob_ln_1k += (hisImagen[i] * Math.log(hisImagen[i]));
+                }
+            }
+            for (int i = k; i < end; i++) {
+                Sum_prob_kl += hisImagen[i];
+                if (hisImagen[i] != 0) {
+                    Sum_prob_ln_kl += (hisImagen[i] * Math.log(hisImagen[i]));
+                }
+            }
+            //Final equation of entropy for each K
+            double eiGrey = Math.log(Sum_prob_1k) + Math.log(Sum_prob_kl) - (Sum_prob_ln_1k / Sum_prob_1k) - (Sum_prob_ln_kl / Sum_prob_kl);
+            if (Double.isNaN(eiGrey)) {
+                dElGrey[k] = 0.0;
+            } else {
+                dElGrey[k] = eiGrey;
+            }
+            if (dElGrey[k] < 0) {
+                dElGrey[k] = 0.0;
+            }
+        }
+        dElGrey[255] = 0.0;
+        EiGrey = new ArrayList(Arrays.asList(dElGrey));
+        double entropiaMax = Collections.max(EiGrey);
+        int entropiaT = EiGrey.indexOf(entropiaMax);
+
+        sliderUmbralBinario.setValue(entropiaT);
+
+        return umbralBinario(aux);
+    }
 
     /**
      * *************************************************
@@ -560,6 +636,7 @@ public class NewJFrame extends javax.swing.JFrame {
         umbralTono = new javax.swing.JComboBox<>();
         umbralFrecuencia = new javax.swing.JRadioButton();
         umbralVarianza = new javax.swing.JRadioButton();
+        entropia = new javax.swing.JRadioButton();
         pnlOperadores = new javax.swing.JPanel();
         inversionVertical = new javax.swing.JRadioButton();
         inversionHorizontal = new javax.swing.JRadioButton();
@@ -620,6 +697,13 @@ public class NewJFrame extends javax.swing.JFrame {
 
         umbralVarianza.setText("Umbral Varianza");
 
+        entropia.setText("Entropia");
+        entropia.addActionListener(new java.awt.event.ActionListener() {
+            public void actionPerformed(java.awt.event.ActionEvent evt) {
+                entropiaActionPerformed(evt);
+            }
+        });
+
         javax.swing.GroupLayout filtrosLayout = new javax.swing.GroupLayout(filtros);
         filtros.setLayout(filtrosLayout);
         filtrosLayout.setHorizontalGroup(
@@ -636,7 +720,8 @@ public class NewJFrame extends javax.swing.JFrame {
                         .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.UNRELATED)
                         .addComponent(umbralTono, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE))
                     .addComponent(umbralFrecuencia)
-                    .addComponent(umbralVarianza))
+                    .addComponent(umbralVarianza)
+                    .addComponent(entropia))
                 .addContainerGap(javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE))
         );
         filtrosLayout.setVerticalGroup(
@@ -657,7 +742,9 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addComponent(umbralFrecuencia)
                 .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
                 .addComponent(umbralVarianza)
-                .addContainerGap(16, Short.MAX_VALUE))
+                .addPreferredGap(javax.swing.LayoutStyle.ComponentPlacement.RELATED)
+                .addComponent(entropia)
+                .addContainerGap(25, Short.MAX_VALUE))
         );
 
         pnlOperadores.setBorder(javax.swing.BorderFactory.createTitledBorder("Operadores\n"));
@@ -749,6 +836,7 @@ public class NewJFrame extends javax.swing.JFrame {
                 .addGroup(pnlOpcionesLayout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
                     .addComponent(pnlOperadores, javax.swing.GroupLayout.Alignment.TRAILING, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, Short.MAX_VALUE)
                     .addGroup(javax.swing.GroupLayout.Alignment.TRAILING, pnlOpcionesLayout.createSequentialGroup()
+                        .addGap(0, 0, Short.MAX_VALUE)
                         .addComponent(sliderBrillo, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
                         .addGap(6, 6, 6)
                         .addComponent(sliderUmbralBinario, javax.swing.GroupLayout.PREFERRED_SIZE, javax.swing.GroupLayout.DEFAULT_SIZE, javax.swing.GroupLayout.PREFERRED_SIZE)
@@ -806,7 +894,7 @@ public class NewJFrame extends javax.swing.JFrame {
             layout.createParallelGroup(javax.swing.GroupLayout.Alignment.LEADING)
             .addGroup(layout.createSequentialGroup()
                 .addContainerGap()
-                .addComponent(jSplitPane2, javax.swing.GroupLayout.DEFAULT_SIZE, 1296, Short.MAX_VALUE)
+                .addComponent(jSplitPane2, javax.swing.GroupLayout.PREFERRED_SIZE, 1296, Short.MAX_VALUE)
                 .addContainerGap())
         );
         layout.setVerticalGroup(
@@ -867,6 +955,8 @@ public class NewJFrame extends javax.swing.JFrame {
         } else if (umbralFrecuencia.isSelected() || umbralVarianza.isSelected()) {
             BufferedImage aux = deepCopy(imagenActual);
             jLabel1.setIcon(new ImageIcon(umbralFrec(imagen2)));
+        } else if (entropia.isSelected()) {
+            jLabel1.setIcon(new ImageIcon(getEntropia(imagen2)));
         }
     }//GEN-LAST:event_ejecutarActionPerformed
 
@@ -891,6 +981,10 @@ public class NewJFrame extends javax.swing.JFrame {
     private void pimientaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_pimientaActionPerformed
         // TODO add your handling code here:
     }//GEN-LAST:event_pimientaActionPerformed
+
+    private void entropiaActionPerformed(java.awt.event.ActionEvent evt) {//GEN-FIRST:event_entropiaActionPerformed
+        // TODO add your handling code here:
+    }//GEN-LAST:event_entropiaActionPerformed
 
     static BufferedImage deepCopy(BufferedImage bi) {
         ColorModel cm = bi.getColorModel();
@@ -998,6 +1092,7 @@ public class NewJFrame extends javax.swing.JFrame {
     // Variables declaration - do not modify//GEN-BEGIN:variables
     private javax.swing.JRadioButton cambioDeRadiante;
     private javax.swing.JButton ejecutar;
+    private javax.swing.JRadioButton entropia;
     private javax.swing.JRadioButton espejo;
     private javax.swing.JPanel filtros;
     private javax.swing.ButtonGroup grupoOpcion;
